@@ -143,6 +143,19 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 @keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .page::-webkit-scrollbar{width:0}
 
+/* ── Calc page: sticky total + scrollable denoms ── */
+#page-calc{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.sticky-total{
+  flex-shrink:0;
+  padding:12px 16px 10px;
+  background:rgba(8,8,16,.75);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  position:relative;z-index:5;
+}
+.calc-scroll{flex:1;overflow-y:auto;padding:12px 16px 90px}
+.calc-scroll::-webkit-scrollbar{width:0}
+
 /* ══════════════════════════════════════════
    CARDS
 ══════════════════════════════════════════ */
@@ -625,92 +638,99 @@ input[type=number]{-moz-appearance:textfield}
   <!-- ── CALCULATE ── -->
   <div class="page active" id="page-calc">
 
-    <div id="installBar" class="install-bar hidden">
-      <span>📲</span>
-      <p class="ib-text">Install CashCalc for offline use & faster experience</p>
-      <button class="ib-btn" id="installBtn">Install</button>
-      <button class="ib-close" onclick="document.getElementById('installBar').classList.add('hidden')">×</button>
-    </div>
-
-    <!-- Payee -->
-    <div class="payee-section">
-      <div class="section-title"><span></span>Session Info<span></span></div>
-      <div class="input-group">
-        <div class="input-wrap">
-          <div class="input-label">Payee Name</div>
-          <input class="neo-input" type="text" id="payeeName" placeholder="Optional"/>
-        </div>
-        <div class="input-wrap">
-          <div class="input-label">Teller Balance</div>
-          <input class="neo-input" type="number" id="tellerBal" placeholder="₹ 0" oninput="calcTotal()"/>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="denom-section">
-      <div class="section-title"><span></span>📄 Notes<span></span></div>
-      <div class="denom-list" id="notesList"></div>
-    </div>
-
-    <!-- Coins -->
-    <div class="denom-section">
-      <div class="section-title"><span></span>🪙 Coins<span></span></div>
-      <div class="denom-list" id="coinsList"></div>
-    </div>
-
-    <!-- Extra -->
-    <div class="denom-section">
-      <div class="section-title"><span></span>Extra Coins<span></span></div>
-      <div class="denom-list">
-        <div class="denom-row" id="extraRow">
-          <div class="d-badge" style="background:rgba(16,185,129,.1);color:var(--gn);border-color:rgba(16,185,129,.2)">Extra</div>
-          <div class="d-x">Coins</div>
-          <div class="d-ctrl">
-            <button class="d-btn m" onclick="stepExtra(-1)">−</button>
-            <input class="d-inp" type="number" id="extraCoins" placeholder="0" min="0" oninput="calcTotal()"/>
-            <button class="d-btn p" onclick="stepExtra(1)">+</button>
+    <!-- STICKY TOTAL (always visible at top) -->
+    <div class="sticky-total">
+      <div class="total-card">
+        <div class="total-card-inner">
+          <div class="total-info">
+            <div class="total-label">Total Amount</div>
+            <div class="total-amt" id="totalAmt">₹ 0</div>
+            <div class="total-words" id="totalWords">Zero Rupees Only.</div>
           </div>
-          <div class="d-eq">=</div>
-          <div class="d-result" id="extraRes">0</div>
+          <button class="save-fab glow" onclick="saveCurrent()">
+            💾<span>Save</span>
+          </button>
+        </div>
+        <div class="total-row2">
+          <div class="mini-stat">
+            <div class="ms-label">Notes</div>
+            <div class="ms-val note" id="ms-noteVal">₹ 0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-label">Coins</div>
+            <div class="ms-val coin" id="ms-coinVal">₹ 0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-label">Teller</div>
+            <div class="ms-val" style="color:var(--cy)" id="ms-teller">₹ 0</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="action-row">
-      <button class="act act-reset" onclick="resetAll()"><span class="act-ico">↺</span>Reset</button>
-      <button class="act act-copy" onclick="copyText()"><span class="act-ico">📋</span>Copy</button>
-      <button class="act act-share" onclick="shareText()"><span class="act-ico">⬆</span>Share</button>
-    </div>
+    <!-- SCROLLABLE DENOMINATIONS -->
+    <div class="calc-scroll">
 
-    <!-- Total -->
-    <div class="total-card">
-      <div class="total-card-inner">
-        <div class="total-info">
-          <div class="total-label">Total Amount</div>
-          <div class="total-amt" id="totalAmt">₹ 0</div>
-          <div class="total-words" id="totalWords">Zero Rupees Only.</div>
-        </div>
-        <button class="save-fab glow" onclick="saveCurrent()">
-          💾<span>Save</span>
-        </button>
+      <div id="installBar" class="install-bar hidden">
+        <span>📲</span>
+        <p class="ib-text">Install CashCalc for offline use & faster experience</p>
+        <button class="ib-btn" id="installBtn">Install</button>
+        <button class="ib-close" onclick="document.getElementById('installBar').classList.add('hidden')">×</button>
       </div>
-      <div class="total-row2">
-        <div class="mini-stat">
-          <div class="ms-label">Notes</div>
-          <div class="ms-val note" id="ms-noteVal">₹ 0</div>
-        </div>
-        <div class="mini-stat">
-          <div class="ms-label">Coins</div>
-          <div class="ms-val coin" id="ms-coinVal">₹ 0</div>
-        </div>
-        <div class="mini-stat">
-          <div class="ms-label">Teller</div>
-          <div class="ms-val" style="color:var(--cy)" id="ms-teller">₹ 0</div>
+
+      <!-- Payee -->
+      <div class="payee-section">
+        <div class="section-title"><span></span>Session Info<span></span></div>
+        <div class="input-group">
+          <div class="input-wrap">
+            <div class="input-label">Payee Name</div>
+            <input class="neo-input" type="text" id="payeeName" placeholder="Optional"/>
+          </div>
+          <div class="input-wrap">
+            <div class="input-label">Teller Balance</div>
+            <input class="neo-input" type="number" id="tellerBal" placeholder="₹ 0" oninput="calcTotal()"/>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Notes -->
+      <div class="denom-section">
+        <div class="section-title"><span></span>📄 Notes<span></span></div>
+        <div class="denom-list" id="notesList"></div>
+      </div>
+
+      <!-- Coins -->
+      <div class="denom-section">
+        <div class="section-title"><span></span>🪙 Coins<span></span></div>
+        <div class="denom-list" id="coinsList"></div>
+      </div>
+
+      <!-- Extra -->
+      <div class="denom-section">
+        <div class="section-title"><span></span>Extra Coins<span></span></div>
+        <div class="denom-list">
+          <div class="denom-row" id="extraRow">
+            <div class="d-badge" style="background:rgba(16,185,129,.1);color:var(--gn);border-color:rgba(16,185,129,.2)">Extra</div>
+            <div class="d-x">Coins</div>
+            <div class="d-ctrl">
+              <button class="d-btn m" onclick="stepExtra(-1)">−</button>
+              <input class="d-inp" type="number" id="extraCoins" placeholder="0" min="0" oninput="calcTotal()"/>
+              <button class="d-btn p" onclick="stepExtra(1)">+</button>
+            </div>
+            <div class="d-eq">=</div>
+            <div class="d-result" id="extraRes">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="act act-reset" onclick="resetAll()"><span class="act-ico">↺</span>Reset</button>
+        <button class="act act-copy" onclick="copyText()"><span class="act-ico">📋</span>Copy</button>
+        <button class="act act-share" onclick="shareText()"><span class="act-ico">⬆</span>Share</button>
+      </div>
+
+    </div><!-- /calc-scroll -->
 
   </div><!-- /calc -->
 
