@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#6c63ff"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="CashCalc"/>
+<title>Cash Denomination Calculator</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<style>
+:root {
+  --bg: #0d0d1a;
+  --surface: #13131f;
+  --surface2: #1a1a2e;
+  --surface3: #202038;
+  --card: #16162a;
+  --border: rgba(108,99,255,0.2);
+  --accent: #6c63ff;
+  --accent2: #00d4ff;
+  --accent3: #ff6b9d;
+  --green: #00e676;
+  --gold: #ffd600;
+  --text: #e8e8f0;
+  --text2: #9898b8;
+  --text3: #5a5a7a;
+  --note-color: #ffd600;
+  --coin-color: #c0a060;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --glow: 0 0 20px rgba(108,99,255,0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--text);display:flex;flex-direction:column}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,#1a1a35 0%,#0d0d1a 100%);
+  padding:12px 16px 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+  z-index:10;
+  flex-shrink:0;
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.header-logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:var(--glow)}
+.logo-text{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.3px}
+.logo-sub{font-size:11px;color:var(--text2);margin-top:-2px}
+.header-actions{display:flex;gap:8px}
+.hdr-btn{width:36px;height:36px;border:none;border-radius:10px;background:var(--surface3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.hdr-btn:active{transform:scale(.92);background:var(--accent)}
+.datetime-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 0 10px;color:var(--text2);font-size:12px}
+.greeting{font-size:13px;font-weight:600;color:var(--accent2)}
+.dt-right{display:flex;gap:12px}
+.dt-chip{background:var(--surface3);padding:3px 8px;border-radius:20px;font-size:11px;border:1px solid var(--border)}
+
+/* TABS */
+.tabs{display:flex;background:var(--surface2);margin:0 -0px;padding:0 0;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;position:relative;transition:all .25s;letter-spacing:.3px}
+.tab.active{color:var(--accent)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2.5px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px}
+.tab-icon{display:block;font-size:18px;margin-bottom:2px}
+
+/* PAGES */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:16px;display:none;scroll-behavior:smooth}
+.page.active{display:block}
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-track{background:transparent}
+.page::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* PAYEE ROW */
+.payee-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.input-wrap{position:relative}
+.input-wrap label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:4px;font-weight:600}
+.field{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:all .2s}
+.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,0.15)}
+.field::placeholder{color:var(--text3)}
+
+/* SECTION HEADER */
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:14px 0 8px;display:flex;align-items:center;gap:6px}
+.section-label::before{content:'';flex:1;height:1px;background:var(--border)}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* DENOM ROWS */
+.denom-list{display:flex;flex-direction:column;gap:6px}
+.denom-row{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  transition:all .2s;
+  position:relative;
+  overflow:hidden;
+}
+.denom-row.has-value{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.06)}
+.denom-row.has-value .denom-result{color:var(--accent)}
+.denom-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--note-color);opacity:.3;transition:.2s}
+.denom-row.has-value::before{opacity:1}
+.coin-row::before{background:var(--coin-color)}
+.denom-badge{
+  min-width:52px;
+  padding:4px 8px;
+  border-radius:8px;
+  font-weight:700;
+  font-size:14px;
+  text-align:center;
+  background:rgba(255,214,0,0.1);
+  color:var(--note-color);
+  border:1px solid rgba(255,214,0,0.2);
+}
+.coin-row .denom-badge{background:rgba(192,160,96,0.12);color:var(--coin-color);border-color:rgba(192,160,96,0.25)}
+.denom-x{color:var(--text3);font-size:12px;font-weight:600;flex-shrink:0}
+.denom-ctrl{display:flex;align-items:center;gap:4px;flex:1}
+.ctrl-btn{
+  width:28px;height:28px;border:none;border-radius:8px;cursor:pointer;
+  font-size:16px;font-weight:700;transition:all .15s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.ctrl-btn.minus{background:rgba(255,107,157,0.15);color:var(--accent3)}
+.ctrl-btn.plus{background:rgba(108,99,255,0.2);color:var(--accent)}
+.ctrl-btn:active{transform:scale(.88)}
+.denom-input{
+  flex:1;min-width:0;
+  background:var(--surface2);
+  border:1.5px solid transparent;
+  border-radius:8px;
+  padding:5px 8px;
+  color:var(--text);
+  font-size:15px;
+  font-weight:600;
+  text-align:center;
+  outline:none;
+  transition:.2s;
+}
+.denom-input:focus{border-color:var(--accent);background:var(--surface3)}
+.denom-eq{color:var(--text3);font-size:13px;flex-shrink:0}
+.denom-result{
+  min-width:60px;
+  text-align:right;
+  font-size:14px;
+  font-weight:700;
+  color:var(--text2);
+  transition:.2s;
+}
+
+/* TOTAL BAR */
+.total-bar{
+  position:sticky;bottom:0;
+  background:linear-gradient(135deg,var(--surface2),var(--surface3));
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  margin-top:14px;
+  box-shadow:var(--shadow);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.total-left{}
+.total-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-weight:600}
+.total-amount{font-size:26px;font-weight:800;color:var(--green);line-height:1.1;margin-top:2px}
+.total-words{font-size:11px;color:var(--text2);margin-top:2px;font-style:italic}
+.save-btn{
+  background:linear-gradient(135deg,var(--accent),#5a52ff);
+  border:none;border-radius:12px;padding:12px 16px;
+  color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  box-shadow:0 4px 16px rgba(108,99,255,0.4);
+  transition:all .2s;
+  flex-shrink:0;
+}
+.save-btn:active{transform:scale(.94)}
+.save-btn span{font-size:20px}
+
+/* ACTION ROW */
+.action-row{display:flex;gap:8px;margin-top:10px}
+.act-btn{
+  flex:1;border:none;border-radius:var(--radius-sm);padding:10px 6px;
+  font-size:11px;font-weight:600;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:all .2s;letter-spacing:.3px;
+}
+.act-btn .ico{font-size:18px}
+.act-btn:active{transform:scale(.92)}
+.btn-reset{background:rgba(255,107,157,0.15);color:var(--accent3);border:1px solid rgba(255,107,157,0.3)}
+.btn-copy{background:rgba(0,212,255,0.1);color:var(--accent2);border:1px solid rgba(0,212,255,0.2)}
+.btn-share{background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.25)}
+
+/* DETAILS PAGE */
+.detail-grid{display:flex;flex-direction:column;gap:10px}
+.detail-card{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all .2s;
+}
+.detail-card:hover{border-color:rgba(108,99,255,.4)}
+.detail-card-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.detail-card-value{font-size:20px;font-weight:800;color:var(--text);margin-top:4px}
+.detail-card-value.green{color:var(--green)}
+.detail-card-value.accent{color:var(--accent)}
+.detail-card-value.gold{color:var(--gold)}
+.detail-card-value.words{font-size:15px;font-weight:600;font-style:italic;color:var(--accent2);margin-top:4px}
+.detail-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ic-green{background:rgba(0,230,118,0.12)}
+.ic-blue{background:rgba(0,212,255,0.1)}
+.ic-purple{background:rgba(108,99,255,0.15)}
+.ic-gold{background:rgba(255,214,0,0.1)}
+.ic-pink{background:rgba(255,107,157,0.12)}
+
+.denom-breakdown{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-top:6px;
+}
+.breakdown-title{padding:12px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--surface2)}
+.breakdown-row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;gap:8px}
+.breakdown-row:last-child{border-bottom:none}
+.br-denom{min-width:44px;font-weight:700;color:var(--note-color)}
+.br-x{color:var(--text3)}
+.br-count{min-width:36px;text-align:right;font-weight:600}
+.br-eq{color:var(--text3);flex:1;text-align:center}
+.br-val{font-weight:700;color:var(--accent);text-align:right;min-width:70px}
+.coin-br .br-denom{color:var(--coin-color)}
+.coin-br .br-val{color:var(--coin-color)}
+
+.detail-actions{display:flex;gap:8px;margin-top:12px}
+.detail-act{flex:1;border:none;border-radius:12px;padding:12px 8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .2s}
+.detail-act .ico{font-size:20px}
+.detail-act:active{transform:scale(.92)}
+.da-reset{background:rgba(255,107,157,0.12);color:var(--accent3);border:1px solid rgba(255,107,157,0.25)}
+.da-copy{background:rgba(0,212,255,0.1);color:var(--accent2);border:1px solid rgba(0,212,255,0.2)}
+.da-share{background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.2)}
+.da-save{background:linear-gradient(135deg,var(--accent),#5a52ff);color:#fff;border:none;box-shadow:0 4px 14px rgba(108,99,255,.3)}
+
+/* HISTORY PAGE */
+.hist-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.hist-title{font-size:16px;font-weight:700}
+.hist-clear-btn{background:rgba(255,107,157,0.12);color:var(--accent3);border:1px solid rgba(255,107,157,0.25);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.hist-list{display:flex;flex-direction:column;gap:10px}
+.hist-card{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:all .2s;
+}
+.hist-card:active{transform:scale(.99)}
+.hist-card-header{
+  padding:12px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);
+}
+.hist-payee{font-size:15px;font-weight:700;color:var(--text)}
+.hist-date-row{font-size:11px;color:var(--text3);margin-top:2px}
+.hist-total{font-size:18px;font-weight:800;color:var(--green)}
+.hist-card-body{padding:10px 14px}
+.hist-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.hist-meta-item{background:var(--surface2);border-radius:8px;padding:7px 10px}
+.hmi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.hmi-value{font-size:13px;font-weight:700;color:var(--text);margin-top:2px}
+.hist-card-footer{display:flex;gap:6px}
+.hf-btn{flex:1;border:none;border-radius:8px;padding:8px 4px;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .2s;letter-spacing:.3px}
+.hf-btn:active{transform:scale(.9)}
+.hfb-del{background:rgba(255,107,157,0.12);color:var(--accent3);border:1px solid rgba(255,107,157,0.2)}
+.hfb-copy{background:rgba(0,212,255,0.08);color:var(--accent2);border:1px solid rgba(0,212,255,0.15)}
+.hfb-share{background:rgba(108,99,255,0.1);color:var(--accent);border:1px solid rgba(108,99,255,0.2)}
+.hfb-view{background:rgba(0,230,118,0.08);color:var(--green);border:1px solid rgba(0,230,118,0.15)}
+.no-history{text-align:center;padding:60px 20px;color:var(--text3)}
+.no-hist-icon{font-size:56px;margin-bottom:14px}
+.no-hist-text{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.no-hist-sub{font-size:13px}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:24px;padding:10px 20px;font-size:13px;font-weight:600;
+  color:var(--text);box-shadow:var(--shadow);
+  opacity:0;transition:all .3s;z-index:100;white-space:nowrap;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  z-index:50;display:none;align-items:flex-end;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:24px 24px 0 0;
+  padding:20px 16px 32px;
+  width:100%;max-width:480px;
+  max-height:85vh;overflow-y:auto;
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;text-align:center}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface3);border:none;border-radius:50%;width:32px;height:32px;color:var(--text2);cursor:pointer;font-size:16px}
+
+/* BADGE PULSE */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,0.4)}50%{box-shadow:0 0 0 8px rgba(108,99,255,0)}}
+.pulse{animation:pulse 2s infinite}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* UTILITIES */
+.flex{display:flex}
+.items-center{align-items:center}
+.gap-8{gap:8px}
+.mt-8{margin-top:8px}
+.hidden{display:none}
+
+/* Install banner */
+.install-banner{
+  background:linear-gradient(135deg,rgba(108,99,255,0.2),rgba(0,212,255,0.1));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:14px;
+}
+.install-banner p{flex:1;font-size:12px;color:var(--text2);line-height:1.4}
+.install-btn{background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.install-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;flex-shrink:0}
+
+/* Number input remove arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* Ripple */
+@keyframes ripple{0%{transform:scale(0);opacity:.6}100%{transform:scale(4);opacity:0}}
+.ripple-effect{position:relative;overflow:hidden}
+.ripple-effect::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,0.3);width:60px;height:60px;margin-top:-30px;margin-left:-30px;animation:ripple .5s linear;top:var(--y,50%);left:var(--x,50%)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-logo">
+      <div class="logo-icon">₹</div>
+      <div>
+        <div class="logo-text">CashCalc</div>
+        <div class="logo-sub">Denomination Calculator</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="hdr-btn" onclick="resetAll()" title="Reset">↺</button>
+      <button class="hdr-btn" onclick="shareText()" title="Share">⬆</button>
+    </div>
+  </div>
+  <div class="datetime-bar">
+    <span class="greeting" id="greeting">Good Morning 🌅</span>
+    <div class="dt-right">
+      <span class="dt-chip" id="dateChip">09-06-2026</span>
+      <span class="dt-chip" id="timeChip">10:00 AM</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('calc',this)">
+      <span class="tab-icon">🧮</span>Calculation
+    </div>
+    <div class="tab" onclick="switchTab('details',this)">
+      <span class="tab-icon">📊</span>Details
+    </div>
+    <div class="tab" onclick="switchTab('history',this)">
+      <span class="tab-icon">🕒</span>History<span id="histBadge" style="display:none;background:var(--accent);color:#fff;border-radius:10px;padding:0 5px;font-size:9px;margin-left:4px"></span>
+    </div>
+  </div>
+</div>
+
+<!-- PAGES -->
+<div class="pages">
+
+  <!-- CALCULATION PAGE -->
+  <div class="page active" id="page-calc">
+    <div id="installBanner" class="install-banner hidden">
+      <span>📲</span>
+      <p>Install CashCalc for offline access & faster experience</p>
+      <button class="install-btn" id="installBtn">Install</button>
+      <button class="install-close" onclick="document.getElementById('installBanner').classList.add('hidden')">×</button>
+    </div>
+
+    <div class="payee-row">
+      <div class="input-wrap">
+        <label>Payee Name</label>
+        <input class="field" type="text" id="payeeName" placeholder="Optional"/>
+      </div>
+      <div class="input-wrap">
+        <label>Teller Balance</label>
+        <input class="field" type="number" id="tellerBalance" placeholder="₹ 0" oninput="calcTotal()"/>
+      </div>
+    </div>
+
+    <div class="section-label">Notes</div>
+    <div class="denom-list" id="notesList"></div>
+
+    <div class="section-label">Coins</div>
+    <div class="denom-list" id="coinsList"></div>
+
+    <div class="section-label">Extra</div>
+    <div class="denom-list">
+      <div class="denom-row" id="extraRow">
+        <div class="denom-badge" style="background:rgba(0,230,118,0.08);color:var(--green);border-color:rgba(0,230,118,0.15)">Extra</div>
+        <div class="denom-x">Coins</div>
+        <div class="denom-ctrl">
+          <button class="ctrl-btn minus" onclick="stepExtra(-1)">−</button>
+          <input class="denom-input" type="number" id="extraCoins" placeholder="0" oninput="calcTotal()" min="0"/>
+          <button class="ctrl-btn plus" onclick="stepExtra(1)">+</button>
+        </div>
+        <div class="denom-eq">=</div>
+        <div class="denom-result" id="extraResult">0</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="act-btn btn-reset" onclick="resetAll()"><span class="ico">↺</span>Reset</button>
+      <button class="act-btn btn-copy" onclick="copyText()"><span class="ico">📋</span>Copy</button>
+      <button class="act-btn btn-share" onclick="shareText()"><span class="ico">⬆</span>Share</button>
+    </div>
+
+    <div class="total-bar">
+      <div class="total-left">
+        <div class="total-label">Total Amount</div>
+        <div class="total-amount" id="totalAmt">₹ 0</div>
+        <div class="total-words" id="totalWords">Zero Rupees Only.</div>
+      </div>
+      <button class="save-btn pulse" onclick="saveCurrent()">
+        <span>💾</span>Save
+      </button>
+    </div>
+  </div>
+
+  <!-- DETAILS PAGE -->
+  <div class="page" id="page-details">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <div>
+          <div class="detail-card-label">Teller Balance</div>
+          <div class="detail-card-value accent" id="d-teller">₹ 0</div>
+        </div>
+        <div class="detail-icon ic-blue">🏦</div>
+      </div>
+      <div class="detail-card">
+        <div>
+          <div class="detail-card-label">Total Amount</div>
+          <div class="detail-card-value green" id="d-total">₹ 0</div>
+        </div>
+        <div class="detail-icon ic-green">💰</div>
+      </div>
+      <div class="detail-card" style="display:block">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="detail-card-label">Amount In Words</div>
+          <div class="detail-icon ic-purple" style="font-size:18px">📝</div>
+        </div>
+        <div class="detail-card-value words" id="d-words">Zero Rupees Only.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="detail-card" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div class="detail-card-label">Total Notes</div>
+          <div class="detail-card-value gold" id="d-noteCount">0 Pcs</div>
+        </div>
+        <div class="detail-card" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div class="detail-card-label">Total Coins</div>
+          <div class="detail-card-value" style="color:var(--coin-color)" id="d-coinCount">0 Pcs</div>
+        </div>
+        <div class="detail-card" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div class="detail-card-label">Notes Value</div>
+          <div class="detail-card-value gold" id="d-noteVal">₹ 0</div>
+        </div>
+        <div class="detail-card" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div class="detail-card-label">Coins Value</div>
+          <div class="detail-card-value" style="color:var(--coin-color)" id="d-coinVal">₹ 0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="denom-breakdown" id="noteBreakdown">
+      <div class="breakdown-title">📄 Note Breakdown</div>
+      <div id="noteBkList"></div>
+    </div>
+    <div class="denom-breakdown" style="margin-top:10px" id="coinBreakdown">
+      <div class="breakdown-title">🪙 Coin Breakdown</div>
+      <div id="coinBkList"></div>
+    </div>
+
+    <div class="detail-actions">
+      <button class="detail-act da-reset" onclick="resetAll()"><span class="ico">↺</span>Reset</button>
+      <button class="detail-act da-copy" onclick="copyText()"><span class="ico">📋</span>Copy</button>
+      <button class="detail-act da-share" onclick="shareText()"><span class="ico">⬆</span>Share</button>
+      <button class="detail-act da-save" onclick="saveCurrent()"><span class="ico">💾</span>Save</button>
+    </div>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div class="page" id="page-history">
+    <div class="hist-header">
+      <div class="hist-title">Saved Records</div>
+      <button class="hist-clear-btn" onclick="clearHistory()">Clear All</button>
+    </div>
+    <div class="hist-list" id="histList">
+      <div class="no-history">
+        <div class="no-hist-icon">📂</div>
+        <div class="no-hist-text">No saved records yet</div>
+        <div class="no-hist-sub">Save a calculation to see it here</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════
+// DATA
+// ═══════════════════════════════
+const NOTES = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+const COINS = [20, 10, 5, 2, 1];
+let deferredInstall = null;
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+function init() {
+  buildDenomRows();
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadHistory();
+  setupInstallPrompt();
+}
+
+function buildDenomRows() {
+  const nl = document.getElementById('notesList');
+  const cl = document.getElementById('coinsList');
+  NOTES.forEach(n => nl.appendChild(makeDenomRow(n, false)));
+  COINS.forEach(n => cl.appendChild(makeDenomRow(n, true)));
+}
+
+function makeDenomRow(denom, isCoin) {
+  const div = document.createElement('div');
+  div.className = 'denom-row' + (isCoin ? ' coin-row' : '');
+  div.id = `row-${isCoin?'c':'n'}${denom}`;
+  div.innerHTML = `
+    <div class="denom-badge">${denom >= 1 ? (isCoin ? denom+'c' : '₹'+denom) : denom}</div>
+    <div class="denom-x">×</div>
+    <div class="denom-ctrl">
+      <button class="ctrl-btn minus" onclick="stepDenom('${isCoin?'c':'n'}${denom}',-1)">−</button>
+      <input class="denom-input" type="number" id="inp-${isCoin?'c':'n'}${denom}"
+             placeholder="0" min="0"
+             oninput="calcTotal()" onkeydown="handleKey(event,'${isCoin?'c':'n'}${denom}')"/>
+      <button class="ctrl-btn plus" onclick="stepDenom('${isCoin?'c':'n'}${denom}',1)">+</button>
+    </div>
+    <div class="denom-eq">=</div>
+    <div class="denom-result" id="res-${isCoin?'c':'n'}${denom}">0</div>
+  `;
+  return div;
+}
+
+function handleKey(e, id) {
+  if (e.key === 'Enter') {
+    const all = [...document.querySelectorAll('.denom-input'), document.getElementById('extraCoins')];
+    const cur = document.getElementById('inp-'+id);
+    const idx = all.indexOf(cur);
+    if (idx < all.length - 1) all[idx+1].focus();
+  }
+}
+
+// ═══════════════════════════════
+// CLOCK & GREETING
+// ═══════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good Morning 🌅' : h < 17 ? 'Good Afternoon ☀️' : h < 21 ? 'Good Evening 🌆' : 'Good Night 🌙';
+  document.getElementById('greeting').textContent = greet;
+  const pad = n => String(n).padStart(2,'0');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('dateChip').textContent =
+    `${pad(now.getDate())}-${months[now.getMonth()]}-${now.getFullYear()} ${days[now.getDay()]}`;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  document.getElementById('timeChip').textContent = `${pad(h12)}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${ampm}`;
+}
+
+// ═══════════════════════════════
+// CALCULATION
+// ═══════════════════════════════
+function getVal(id) { return parseInt(document.getElementById(id)?.value) || 0; }
+
+function calcTotal() {
+  let notesTotal = 0, coinsTotal = 0, noteCount = 0, coinCount = 0;
+  const noteBreak = [], coinBreak = [];
+
+  NOTES.forEach(n => {
+    const count = getVal(`inp-n${n}`);
+    const val = count * n;
+    notesTotal += val;
+    noteCount += count;
+    const el = document.getElementById(`res-n${n}`);
+    const row = document.getElementById(`row-n${n}`);
+    el.textContent = fmtNum(val);
+    row.classList.toggle('has-value', count > 0);
+    if (count > 0) noteBreak.push({denom: n, count, val});
+  });
+
+  COINS.forEach(n => {
+    const count = getVal(`inp-c${n}`);
+    const val = count * n;
+    coinsTotal += val;
+    coinCount += count;
+    const el = document.getElementById(`res-c${n}`);
+    const row = document.getElementById(`row-c${n}`);
+    el.textContent = fmtNum(val);
+    row.classList.toggle('has-value', count > 0);
+    if (count > 0) coinBreak.push({denom: n, count, val});
+  });
+
+  const extra = getVal('extraCoins');
+  document.getElementById('extraResult').textContent = extra;
+  document.getElementById('extraRow').classList.toggle('has-value', extra > 0);
+
+  const total = notesTotal + coinsTotal + extra;
+  const words = numToWords(total);
+
+  document.getElementById('totalAmt').textContent = '₹ ' + fmtNum(total);
+  document.getElementById('totalWords').textContent = words;
+
+  // Update details
+  const teller = getVal('tellerBalance');
+  document.getElementById('d-teller').textContent = '₹ ' + fmtNum(teller);
+  document.getElementById('d-total').textContent = '₹ ' + fmtNum(total);
+  document.getElementById('d-words').textContent = words;
+  document.getElementById('d-noteCount').textContent = noteCount + ' Pcs';
+  document.getElementById('d-coinCount').textContent = (coinCount + extra) + ' Pcs';
+  document.getElementById('d-noteVal').textContent = '₹ ' + fmtNum(notesTotal);
+  document.getElementById('d-coinVal').textContent = '₹ ' + fmtNum(coinsTotal + extra);
+
+  updateBreakdown('noteBkList', noteBreak, false);
+  updateBreakdown('coinBkList', coinBreak, true);
+}
+
+function updateBreakdown(id, items, isCoin) {
+  const el = document.getElementById(id);
+  if (!items.length) { el.innerHTML = `<div class="breakdown-row" style="color:var(--text3)">No ${isCoin?'coins':'notes'} entered</div>`; return; }
+  el.innerHTML = items.map(({denom, count, val}) => `
+    <div class="breakdown-row ${isCoin?'coin-br':''}">
+      <span class="br-denom">${isCoin ? denom+'c' : '₹'+denom}</span>
+      <span class="br-x">×</span>
+      <span class="br-count">${fmtNum(count)}</span>
+      <span class="br-eq">=</span>
+      <span class="br-val">₹ ${fmtNum(val)}</span>
+    </div>
+  `).join('');
+}
+
+function stepDenom(id, delta) {
+  const inp = document.getElementById('inp-'+id);
+  if (!inp) return;
+  const cur = parseInt(inp.value) || 0;
+  inp.value = Math.max(0, cur + delta);
+  calcTotal();
+}
+
+function stepExtra(delta) {
+  const inp = document.getElementById('extraCoins');
+  const cur = parseInt(inp.value) || 0;
+  inp.value = Math.max(0, cur + delta);
+  calcTotal();
+}
+
+// ═══════════════════════════════
+// FORMATTING
+// ═══════════════════════════════
+function fmtNum(n) {
+  if (n === 0) return '0';
+  return n.toLocaleString('en-IN');
+}
+
+function numToWords(num) {
+  if (num === 0) return 'Zero Rupees Only.';
+  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function wordify(n) {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' '+ones[n%10] : '');
+    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' '+wordify(n%100) : '');
+    if (n < 100000) return wordify(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' '+wordify(n%1000) : '');
+    if (n < 10000000) return wordify(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' '+wordify(n%100000) : '');
+    return wordify(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' '+wordify(n%10000000) : '');
+  }
+  return wordify(num) + ' Rupees Only.';
+}
+
+function buildShareText(record) {
+  const now = record ? new Date(record.ts) : new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const payee = record ? record.payee : (document.getElementById('payeeName').value || 'Unknown');
+  const teller = record ? record.teller : (getVal('tellerBalance') || 0);
+  const data = record ? record.data : buildCurrentData();
+
+  let text = `Date : ${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}\n`;
+  text += `Day  : ${days[now.getDay()]}\n`;
+  text += `Time : ${pad(now.getHours()%12||12)}:${pad(now.getMinutes())} ${now.getHours()>=12?'PM':'AM'}\n`;
+  text += `Payee: ${payee}\n`;
+  if (teller) text += `Teller Balance: ₹${fmtNum(teller)}\n`;
+  text += '\n• Notes:\n';
+  data.notes.forEach(({denom, count, val}) => {
+    text += `  ₹${denom} × ${count} = ₹${fmtNum(val)}\n`;
+  });
+  text += `  Total Notes Value => ₹${fmtNum(data.notesTotal)}\n`;
+  text += '\n• Coins:\n';
+  data.coins.forEach(({denom, count, val}) => {
+    text += `  ${denom} coin × ${count} = ₹${fmtNum(val)}\n`;
+  });
+  if (data.extra) text += `  Extra Coins: ₹${data.extra}\n`;
+  text += `  Total Coins Value => ₹${fmtNum(data.coinsTotal + data.extra)}\n`;
+  text += `\n• Total Amount => ₹${fmtNum(data.total)}\n`;
+  text += `• In Words => ${numToWords(data.total)}\n`;
+  return text;
+}
+
+function buildCurrentData() {
+  const notes = [], coins = [];
+  let notesTotal = 0, coinsTotal = 0;
+  NOTES.forEach(n => {
+    const count = getVal(`inp-n${n}`);
+    if (count > 0) { const val = count*n; notes.push({denom:n,count,val}); notesTotal += val; }
+  });
+  COINS.forEach(n => {
+    const count = getVal(`inp-c${n}`);
+    if (count > 0) { const val = count*n; coins.push({denom:n,count,val}); coinsTotal += val; }
+  });
+  const extra = getVal('extraCoins');
+  const total = notesTotal + coinsTotal + extra;
+  return {notes, coins, notesTotal, coinsTotal, extra, total};
+}
+
+// ═══════════════════════════════
+// ACTIONS
+// ═══════════════════════════════
+function resetAll() {
+  NOTES.forEach(n => { const i = document.getElementById(`inp-n${n}`); if(i) i.value=''; });
+  COINS.forEach(n => { const i = document.getElementById(`inp-c${n}`); if(i) i.value=''; });
+  document.getElementById('extraCoins').value = '';
+  document.getElementById('payeeName').value = '';
+  document.getElementById('tellerBalance').value = '';
+  calcTotal();
+  showToast('✅ Reset complete');
+}
+
+function copyText() {
+  const text = buildShareText(null);
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Copied to clipboard'));
+}
+
+function shareText() {
+  const text = buildShareText(null);
+  if (navigator.share) {
+    navigator.share({ title: 'Cash Denomination', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Copied (Share not supported)'));
+  }
+}
+
+// ═══════════════════════════════
+// SAVE / HISTORY
+// ═══════════════════════════════
+function saveCurrent() {
+  const data = buildCurrentData();
+  if (data.total === 0) { showToast('⚠️ Enter at least one denomination'); return; }
+  const record = {
+    id: Date.now(),
+    ts: Date.now(),
+    payee: document.getElementById('payeeName').value || 'Unknown',
+    teller: getVal('tellerBalance'),
+    data
+  };
+  const history = getHistory();
+  history.unshift(record);
+  localStorage.setItem('cashcalc_history', JSON.stringify(history.slice(0, 50)));
+  loadHistory();
+  showToast('💾 Saved successfully');
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('cashcalc_history') || '[]'); } catch { return []; }
+}
+
+function loadHistory() {
+  const history = getHistory();
+  const badge = document.getElementById('histBadge');
+  if (history.length) { badge.style.display = 'inline'; badge.textContent = history.length; }
+  else { badge.style.display = 'none'; }
+
+  const list = document.getElementById('histList');
+  if (!history.length) {
+    list.innerHTML = `<div class="no-history"><div class="no-hist-icon">📂</div><div class="no-hist-text">No saved records yet</div><div class="no-hist-sub">Save a calculation to see it here</div></div>`;
+    return;
+  }
+  list.innerHTML = history.map((r, i) => {
+    const d = new Date(r.ts);
+    const pad = n => String(n).padStart(2,'0');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dateStr = `${pad(d.getDate())}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    const timeStr = `${pad(d.getHours()%12||12)}:${pad(d.getMinutes())} ${d.getHours()>=12?'PM':'AM'}`;
+    return `
+    <div class="hist-card" id="hcard-${r.id}">
+      <div class="hist-card-header">
+        <div>
+          <div class="hist-payee">${r.payee}</div>
+          <div class="hist-date-row">${dateStr} &nbsp;•&nbsp; ${days[d.getDay()]} &nbsp;•&nbsp; ${timeStr}</div>
+        </div>
+        <div class="hist-total">₹ ${fmtNum(r.data.total)}</div>
+      </div>
+      <div class="hist-card-body">
+        <div class="hist-meta">
+          <div class="hist-meta-item">
+            <div class="hmi-label">Notes</div>
+            <div class="hmi-value" style="color:var(--note-color)">₹ ${fmtNum(r.data.notesTotal)}</div>
+          </div>
+          <div class="hist-meta-item">
+            <div class="hmi-label">Coins</div>
+            <div class="hmi-value" style="color:var(--coin-color)">₹ ${fmtNum(r.data.coinsTotal + r.data.extra)}</div>
+          </div>
+          <div class="hist-meta-item">
+            <div class="hmi-label">Notes Pcs</div>
+            <div class="hmi-value">${r.data.notes.reduce((a,b)=>a+b.count,0)} Pcs</div>
+          </div>
+          <div class="hist-meta-item">
+            <div class="hmi-label">Coins Pcs</div>
+            <div class="hmi-value">${r.data.coins.reduce((a,b)=>a+b.count,0)} Pcs</div>
+          </div>
+        </div>
+        <div class="hist-card-footer">
+          <button class="hf-btn hfb-del" onclick="deleteRecord(${r.id})">🗑 Del</button>
+          <button class="hf-btn hfb-copy" onclick="copyRecord(${i})">📋 Copy</button>
+          <button class="hf-btn hfb-share" onclick="shareRecord(${i})">⬆ Share</button>
+          <button class="hf-btn hfb-view" onclick="loadRecord(${i})">📂 Load</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteRecord(id) {
+  let history = getHistory().filter(r => r.id !== id);
+  localStorage.setItem('cashcalc_history', JSON.stringify(history));
+  loadHistory();
+  showToast('🗑 Deleted');
+}
+
+function clearHistory() {
+  if (!getHistory().length) return;
+  localStorage.removeItem('cashcalc_history');
+  loadHistory();
+  showToast('🗑 History cleared');
+}
+
+function copyRecord(idx) {
+  const r = getHistory()[idx];
+  if (!r) return;
+  navigator.clipboard.writeText(buildShareText(r)).then(() => showToast('📋 Copied'));
+}
+
+function shareRecord(idx) {
+  const r = getHistory()[idx];
+  if (!r) return;
+  const text = buildShareText(r);
+  if (navigator.share) navigator.share({ title: 'Cash Denomination', text });
+  else navigator.clipboard.writeText(text).then(() => showToast('📋 Copied'));
+}
+
+function loadRecord(idx) {
+  const r = getHistory()[idx];
+  if (!r) return;
+  resetAll();
+  document.getElementById('payeeName').value = r.payee !== 'Unknown' ? r.payee : '';
+  document.getElementById('tellerBalance').value = r.teller || '';
+  r.data.notes.forEach(({denom, count}) => {
+    const el = document.getElementById(`inp-n${denom}`);
+    if (el) el.value = count;
+  });
+  r.data.coins.forEach(({denom, count}) => {
+    const el = document.getElementById(`inp-c${denom}`);
+    if (el) el.value = count;
+  });
+  if (r.data.extra) document.getElementById('extraCoins').value = r.data.extra;
+  calcTotal();
+  switchTab('calc', document.querySelector('.tab'));
+  showToast('📂 Record loaded');
+}
+
+// ═══════════════════════════════
+// TABS
+// ═══════════════════════════════
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const tabs = document.querySelectorAll('.tab');
+  const map = {calc:0, details:1, history:2};
+  tabs[map[name]].classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
+  if (name !== 'calc') calcTotal();
+}
+
+// ═══════════════════════════════
+// TOAST
+// ═══════════════════════════════
+function showToast(msg, dur=2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ═══════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════
+function setupInstallPrompt() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstall = e;
+    document.getElementById('installBanner').classList.remove('hidden');
+  });
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    const { outcome } = await deferredInstall.userChoice;
+    deferredInstall = null;
+    document.getElementById('installBanner').classList.add('hidden');
+    if (outcome === 'accepted') showToast('🎉 App installed!');
+  });
+}
+
+// ═══════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+init();
+</script>
+</body>
+</html>
