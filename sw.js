@@ -1,4 +1,4 @@
-const CACHE = 'cashcalc-v5';
+const CACHE = 'cashcalc-v6';
 const BASE = '/Cash-info';
 const ASSETS = [BASE+'/', BASE+'/index.html', BASE+'/manifest.json'];
 
