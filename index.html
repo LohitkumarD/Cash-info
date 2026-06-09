@@ -472,15 +472,16 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 .hc-dt-chip.time{background:rgba(6,182,212,.1);color:var(--cy);border:1px solid rgba(6,182,212,.2)}
 .hc-dt-chip.day{background:rgba(245,158,11,.08);color:var(--note);border:1px solid rgba(245,158,11,.18);font-size:10px}
 
-/* ── payee + total row ── */
+/* ── payee + total row (tap target) ── */
 .hc-mid{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 14px 10px 14px;
-  border-bottom:1px solid var(--border);
+  cursor:pointer;user-select:none;
 }
 .hc-payee-wrap{}
 .hc-payee{font-size:17px;font-weight:900;letter-spacing:.2px}
 .hc-payee-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t4);margin-bottom:2px}
+.hc-right{display:flex;align-items:center;gap:8px}
 .hc-total{
   font-size:22px;font-weight:900;
   background:linear-gradient(135deg,var(--gn),var(--cy));
@@ -488,9 +489,25 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
   text-align:right;
 }
 .hc-total-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t4);text-align:right;margin-bottom:2px}
+.hc-chevron{
+  font-size:16px;color:var(--t3);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  flex-shrink:0;line-height:1;
+}
+.hist-card.open .hc-chevron{transform:rotate(180deg);color:var(--p)}
 
-/* ── stats grid ── */
-.hc-body{padding:10px 14px}
+/* ── expandable body ── */
+.hc-body{
+  max-height:0;overflow:hidden;
+  transition:max-height .35s cubic-bezier(.4,0,.2,1), padding .3s;
+  padding:0 14px;
+  border-top:0px solid var(--border);
+}
+.hist-card.open .hc-body{
+  max-height:300px;
+  padding:10px 14px;
+  border-top:1px solid var(--border);
+}
 .hc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
 .hcs-item{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:9px;padding:7px 6px;text-align:center}
 .hcs-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t4)}
@@ -1138,20 +1155,23 @@ function renderHistory(){
     const dayName=ds[d.getDay()];
     const nPcs=r.data.notes.reduce((a,b)=>a+b.cnt,0);
     const cPcs=r.data.coins.reduce((a,b)=>a+b.cnt,0);
-    return`<div class="hist-card">
+    return`<div class="hist-card" id="hcard-${r.id}">
       <div class="hc-dt">
         <span class="hc-dt-chip date">🗓 ${date}</span>
         <span class="hc-dt-chip day">${dayName}</span>
         <span class="hc-dt-chip time">⏰ ${time}</span>
       </div>
-      <div class="hc-mid">
+      <div class="hc-mid" onclick="toggleCard(${r.id})">
         <div class="hc-payee-wrap">
           <div class="hc-payee-label">Payee</div>
           <div class="hc-payee">${r.payee}</div>
         </div>
-        <div>
-          <div class="hc-total-label">Total</div>
-          <div class="hc-total">₹ ${fmt(r.data.total)}</div>
+        <div class="hc-right">
+          <div>
+            <div class="hc-total-label">Total</div>
+            <div class="hc-total">₹ ${fmt(r.data.total)}</div>
+          </div>
+          <div class="hc-chevron">⌄</div>
         </div>
       </div>
       <div class="hc-body">
@@ -1173,6 +1193,10 @@ function renderHistory(){
 }
 function loadHistory(){renderHistory();}
 
+function toggleCard(id){
+  const el=document.getElementById('hcard-'+id);
+  if(el)el.classList.toggle('open');
+}
 function delRec(id){
   localStorage.setItem('cc_h',JSON.stringify(getH().filter(r=>r.id!==id)));
   renderHistory();toast('🗑 Deleted');
