@@ -446,7 +446,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
   transition:all .2s;
 }
 .clear-btn:active{transform:scale(.93)}
-.hist-list{display:flex;flex-direction:column;gap:10px}
+.hist-list{display:flex;flex-direction:column;gap:12px}
 .hist-card{
   background:var(--glass);border:1px solid var(--border);
   border-radius:var(--r);overflow:hidden;
@@ -454,23 +454,45 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
   transition:all .25s;
   position:relative;
 }
-.hist-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none}
-.hc-top{
-  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);
-  background:rgba(255,255,255,.02);
+.hist-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;border-radius:inherit}
+/* coloured left accent bar */
+.hist-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--p),var(--pk));border-radius:var(--r) 0 0 var(--r)}
+
+/* ── datetime row ── */
+.hc-dt{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 14px 0 14px;
 }
-.hc-left{}
-.hc-payee{font-size:15px;font-weight:800}
-.hc-date{font-size:11px;color:var(--t3);margin-top:2px}
+.hc-dt-chip{
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;
+  padding:4px 10px;border-radius:20px;
+}
+.hc-dt-chip.date{background:rgba(168,85,247,.12);color:var(--p);border:1px solid rgba(168,85,247,.25)}
+.hc-dt-chip.time{background:rgba(6,182,212,.1);color:var(--cy);border:1px solid rgba(6,182,212,.2)}
+.hc-dt-chip.day{background:rgba(245,158,11,.08);color:var(--note);border:1px solid rgba(245,158,11,.18);font-size:10px}
+
+/* ── payee + total row ── */
+.hc-mid{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px 10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.hc-payee-wrap{}
+.hc-payee{font-size:17px;font-weight:900;letter-spacing:.2px}
+.hc-payee-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t4);margin-bottom:2px}
 .hc-total{
-  font-size:20px;font-weight:900;
+  font-size:22px;font-weight:900;
   background:linear-gradient(135deg,var(--gn),var(--cy));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-align:right;
 }
+.hc-total-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t4);text-align:right;margin-bottom:2px}
+
+/* ── stats grid ── */
 .hc-body{padding:10px 14px}
 .hc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
-.hcs-item{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:9px;padding:7px 8px;text-align:center}
+.hcs-item{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:9px;padding:7px 6px;text-align:center}
 .hcs-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t4)}
 .hcs-val{font-size:12px;font-weight:800;margin-top:2px;color:var(--t2)}
 .hc-foot{display:flex;gap:6px}
@@ -1111,17 +1133,26 @@ function renderHistory(){
   const ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   list.innerHTML=h.map((r,i)=>{
     const d=new Date(r.ts);
-    const date=`${pad(d.getDate())}-${mons[d.getMonth()]}-${d.getFullYear()}`;
+    const date=`${pad(d.getDate())} ${mons[d.getMonth()]} ${d.getFullYear()}`;
     const time=`${pad(d.getHours()%12||12)}:${pad(d.getMinutes())} ${d.getHours()>=12?'PM':'AM'}`;
+    const dayName=ds[d.getDay()];
     const nPcs=r.data.notes.reduce((a,b)=>a+b.cnt,0);
     const cPcs=r.data.coins.reduce((a,b)=>a+b.cnt,0);
     return`<div class="hist-card">
-      <div class="hc-top">
-        <div class="hc-left">
+      <div class="hc-dt">
+        <span class="hc-dt-chip date">🗓 ${date}</span>
+        <span class="hc-dt-chip day">${dayName}</span>
+        <span class="hc-dt-chip time">⏰ ${time}</span>
+      </div>
+      <div class="hc-mid">
+        <div class="hc-payee-wrap">
+          <div class="hc-payee-label">Payee</div>
           <div class="hc-payee">${r.payee}</div>
-          <div class="hc-date">${date} &bull; ${ds[d.getDay()]} &bull; ${time}</div>
         </div>
-        <div class="hc-total">₹ ${fmt(r.data.total)}</div>
+        <div>
+          <div class="hc-total-label">Total</div>
+          <div class="hc-total">₹ ${fmt(r.data.total)}</div>
+        </div>
       </div>
       <div class="hc-body">
         <div class="hc-stats">
