@@ -594,22 +594,58 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ══════════════════════════════════════════
-   INSTALL BANNER
+   INSTALL BUTTON + MODAL
 ══════════════════════════════════════════ */
-.install-bar{
-  background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(6,182,212,.1));
-  border:1px solid rgba(168,85,247,.25);
-  border-radius:14px;padding:12px 14px;
-  display:flex;align-items:center;gap:10px;
-  margin-bottom:16px;
-}
-.ib-text{flex:1;font-size:12px;color:var(--t2);line-height:1.4}
-.ib-btn{
+.install-icon-btn{
+  height:32px;border:none;border-radius:20px;padding:0 12px;
   background:linear-gradient(135deg,var(--p),var(--pk));
-  border:none;border-radius:9px;padding:8px 14px;
-  color:#fff;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;
+  color:#fff;font-size:11px;font-weight:800;letter-spacing:.4px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;
+  box-shadow:0 0 16px rgba(168,85,247,.4);
+  transition:all .2s;flex-shrink:0;
 }
-.ib-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:20px;flex-shrink:0}
+.install-icon-btn:active{transform:scale(.92)}
+.install-icon-btn.installed{display:none}
+
+.install-modal{
+  position:fixed;inset:0;z-index:300;
+  display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.65);backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.install-modal.show{opacity:1;pointer-events:all}
+.install-sheet{
+  width:100%;max-width:480px;
+  background:rgba(13,13,26,.98);
+  border:1px solid var(--border2);
+  border-radius:24px 24px 0 0;
+  padding:16px 20px 44px;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.install-modal.show .install-sheet{transform:translateY(0)}
+.is-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+.is-title{font-size:20px;font-weight:900;margin-bottom:5px}
+.is-sub{font-size:13px;color:var(--t3);margin-bottom:18px;line-height:1.5}
+.is-step{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:var(--glass);border:1px solid var(--border);
+  border-radius:14px;margin-bottom:8px;
+}
+.is-num{
+  width:28px;height:28px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--p),var(--pk));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;
+}
+.is-step-text{font-size:13px;font-weight:600;color:var(--t2);line-height:1.4}
+.is-close{
+  width:100%;border:none;border-radius:14px;padding:14px;
+  background:rgba(255,255,255,.06);color:var(--t2);
+  font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;
+  border:1px solid var(--border);
+}
 .hidden{display:none!important}
 
 /* ══════════════════════════════════════════
@@ -658,6 +694,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <div class="header-right">
     <span class="greeting-chip" id="greetChip">Good Morning</span>
+    <button class="install-icon-btn" id="installIconBtn" onclick="triggerInstall()">📲 Install</button>
     <button class="icon-btn" onclick="resetAll()" title="Reset">↺</button>
     <button class="icon-btn" onclick="shareText()" title="Share">⬆</button>
   </div>
@@ -710,13 +747,6 @@ input[type=number]{-moz-appearance:textfield}
 
     <!-- SCROLLABLE DENOMINATIONS -->
     <div class="calc-scroll">
-
-      <div id="installBar" class="install-bar hidden">
-        <span>📲</span>
-        <p class="ib-text">Install CashCalc for offline use & faster experience</p>
-        <button class="ib-btn" id="installBtn">Install</button>
-        <button class="ib-close" onclick="document.getElementById('installBar').classList.add('hidden')">×</button>
-      </div>
 
       <!-- Payee -->
       <div class="payee-section">
@@ -889,6 +919,17 @@ input[type=number]{-moz-appearance:textfield}
 </div><!-- /app -->
 
 <div class="toast" id="toast"></div>
+
+<!-- INSTALL MODAL -->
+<div class="install-modal" id="installModal" onclick="closeInstallModal(event)">
+  <div class="install-sheet">
+    <div class="is-handle"></div>
+    <div class="is-title">📲 Install CashCalc</div>
+    <div class="is-sub" id="isSubText">Add to your home screen for instant offline access.</div>
+    <div id="isSteps"></div>
+    <button class="is-close" onclick="document.getElementById('installModal').classList.remove('show')">Close</button>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════
@@ -1248,17 +1289,52 @@ function toast(msg,dur=2400){
 // ═══════════════════════
 function setupPWA(){
   window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();deferredInstall=e;
-    document.getElementById('installBar').classList.remove('hidden');
+    e.preventDefault();
+    deferredInstall=e;
   });
-  document.getElementById('installBtn').addEventListener('click',async()=>{
-    if(!deferredInstall)return;
-    deferredInstall.prompt();
-    const{outcome}=await deferredInstall.userChoice;
+  window.addEventListener('appinstalled',()=>{
     deferredInstall=null;
-    document.getElementById('installBar').classList.add('hidden');
-    if(outcome==='accepted')toast('🎉 App installed!');
+    document.getElementById('installIconBtn').classList.add('installed');
+    toast('🎉 CashCalc installed!');
   });
+}
+
+function triggerInstall(){
+  if(deferredInstall){
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(({outcome})=>{
+      if(outcome==='accepted'){
+        deferredInstall=null;
+        document.getElementById('installIconBtn').classList.add('installed');
+        document.getElementById('installModal').classList.remove('show');
+        toast('🎉 App installed!');
+      }
+    });
+    return;
+  }
+  // Show manual instructions based on platform
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  const sub=document.getElementById('isSubText');
+  const steps=document.getElementById('isSteps');
+  if(isIOS){
+    sub.textContent='On Safari, follow these steps:';
+    steps.innerHTML=`
+      <div class="is-step"><div class="is-num">1</div><div class="is-step-text">Tap the <strong>Share ↑</strong> button at the bottom of Safari</div></div>
+      <div class="is-step"><div class="is-num">2</div><div class="is-step-text">Scroll and tap <strong>"Add to Home Screen"</strong></div></div>
+      <div class="is-step"><div class="is-num">3</div><div class="is-step-text">Tap <strong>Add</strong> in the top-right corner</div></div>`;
+  } else {
+    sub.textContent='On Chrome, follow these steps:';
+    steps.innerHTML=`
+      <div class="is-step"><div class="is-num">1</div><div class="is-step-text">Tap the <strong>⋮ menu</strong> in the top-right of Chrome</div></div>
+      <div class="is-step"><div class="is-num">2</div><div class="is-step-text">Tap <strong>"Add to Home screen"</strong></div></div>
+      <div class="is-step"><div class="is-num">3</div><div class="is-step-text">Tap <strong>Add</strong> to confirm</div></div>`;
+  }
+  document.getElementById('installModal').classList.add('show');
+}
+
+function closeInstallModal(e){
+  if(e.target===document.getElementById('installModal'))
+    document.getElementById('installModal').classList.remove('show');
 }
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
