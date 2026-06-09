@@ -499,12 +499,12 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 /* ── expandable body ── */
 .hc-body{
   max-height:0;overflow:hidden;
-  transition:max-height .35s cubic-bezier(.4,0,.2,1), padding .3s;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1), padding .3s;
   padding:0 14px;
   border-top:0px solid var(--border);
 }
 .hist-card.open .hc-body{
-  max-height:300px;
+  max-height:800px;
   padding:10px 14px;
   border-top:1px solid var(--border);
 }
@@ -512,6 +512,29 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 .hcs-item{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:9px;padding:7px 6px;text-align:center}
 .hcs-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t4)}
 .hcs-val{font-size:12px;font-weight:800;margin-top:2px;color:var(--t2)}
+
+/* ── denomination breakdown in history card ── */
+.hc-bk{margin-bottom:10px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.hc-bk-head{
+  padding:7px 12px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;
+  background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;color:var(--t3);
+}
+.hc-bk-row{
+  display:flex;align-items:center;padding:7px 12px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  font-size:12px;gap:6px;
+}
+.hc-bk-row:last-child{border-bottom:none}
+.hc-bk-d{min-width:44px;font-weight:800;color:var(--note)}
+.hc-bk-coin .hc-bk-d{color:var(--coin)}
+.hc-bk-x{color:var(--t4);font-size:10px}
+.hc-bk-c{min-width:32px;text-align:right;font-weight:700;color:var(--t2)}
+.hc-bk-e{flex:1;text-align:center;color:var(--t4);font-size:10px}
+.hc-bk-v{font-weight:800;color:var(--p);min-width:64px;text-align:right}
+.hc-bk-coin .hc-bk-v{color:var(--coin)}
+
 .hc-foot{display:flex;gap:6px}
 .hf-btn{
   flex:1;border:none;border-radius:9px;padding:8px 4px;
@@ -1196,6 +1219,35 @@ function renderHistory(){
     const dayName=ds[d.getDay()];
     const nPcs=r.data.notes.reduce((a,b)=>a+b.cnt,0);
     const cPcs=r.data.coins.reduce((a,b)=>a+b.cnt,0);
+
+    const noteBkHTML = r.data.notes.length
+      ? `<div class="hc-bk">
+          <div class="hc-bk-head">📄 Notes Breakdown</div>
+          ${r.data.notes.map(({d:dn,cnt,val})=>`
+          <div class="hc-bk-row">
+            <span class="hc-bk-d">₹${dn}</span>
+            <span class="hc-bk-x">×</span>
+            <span class="hc-bk-c">${fmt(cnt)}</span>
+            <span class="hc-bk-e">=</span>
+            <span class="hc-bk-v">₹ ${fmt(val)}</span>
+          </div>`).join('')}
+         </div>` : '';
+
+    const allCoins=[...r.data.coins];
+    if(r.data.extra) allCoins.push({d:'Extra',cnt:r.data.extra,val:r.data.extra});
+    const coinBkHTML = allCoins.length
+      ? `<div class="hc-bk hc-bk-coin">
+          <div class="hc-bk-head">🪙 Coins Breakdown</div>
+          ${allCoins.map(({d:dn,cnt,val})=>`
+          <div class="hc-bk-row hc-bk-coin">
+            <span class="hc-bk-d">${dn==='Extra'?'Extra':dn+'c'}</span>
+            <span class="hc-bk-x">×</span>
+            <span class="hc-bk-c">${fmt(cnt)}</span>
+            <span class="hc-bk-e">=</span>
+            <span class="hc-bk-v">₹ ${fmt(val)}</span>
+          </div>`).join('')}
+         </div>` : '';
+
     return`<div class="hist-card" id="hcard-${r.id}">
       <div class="hc-dt">
         <span class="hc-dt-chip date">🗓 ${date}</span>
@@ -1222,6 +1274,8 @@ function renderHistory(){
           <div class="hcs-item"><div class="hcs-label">Note Pcs</div><div class="hcs-val">${nPcs}</div></div>
           <div class="hcs-item"><div class="hcs-label">Coin Pcs</div><div class="hcs-val">${cPcs}</div></div>
         </div>
+        ${noteBkHTML}
+        ${coinBkHTML}
         <div class="hc-foot">
           <button class="hf-btn hfb-del" onclick="delRec(${r.id})">🗑 Del</button>
           <button class="hf-btn hfb-copy" onclick="cpyRec(${i})">📋 Copy</button>
@@ -1337,7 +1391,17 @@ function closeInstallModal(e){
     document.getElementById('installModal').classList.remove('show');
 }
 
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js',{scope:'./'})
+    .then(reg=>{
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='activated')window.location.reload();
+        });
+      });
+    });
+}
 
 init();
 </script>
