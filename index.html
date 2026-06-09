@@ -144,7 +144,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
 .page::-webkit-scrollbar{width:0}
 
 /* ── Calc page: sticky total + scrollable denoms ── */
-#page-calc{display:flex;flex-direction:column;overflow:hidden;padding:0}
+#page-calc{display:none;flex-direction:column;overflow:hidden;padding:0}
+#page-calc.active{display:flex}
 .sticky-total{
   flex-shrink:0;
   padding:12px 16px 10px;
@@ -1174,7 +1175,8 @@ function switchTab(name){
     document.getElementById('page-'+t).classList.toggle('active',t===name);
     document.getElementById('nav-'+t).classList.toggle('active',t===name);
   });
-  if(name!=='calc')calcTotal();
+  if(name==='details')calcTotal();
+  if(name==='history')renderHistory();
 }
 
 // ═══════════════════════
