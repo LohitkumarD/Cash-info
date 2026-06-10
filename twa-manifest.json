@@ -1,0 +1,43 @@
+{
+  "packageId": "com.cashcalc.app",
+  "host": "lohitkumard.github.io",
+  "name": "CashCalc – Denomination Calculator",
+  "launcherName": "CashCalc",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": {"r": 168, "g": 85, "b": 247, "a": 255},
+  "themeColorDark": {"r": 168, "g": 85, "b": 247, "a": 255},
+  "navigationColor": {"r": 8, "g": 8, "b": 16, "a": 255},
+  "navigationColorDark": {"r": 8, "g": 8, "b": 16, "a": 255},
+  "backgroundColor": {"r": 8, "g": 8, "b": 16, "a": 255},
+  "startUrl": "/Cash-info/",
+  "iconUrl": "https://lohitkumard.github.io/Cash-info/icons/icon-512.png",
+  "maskableIconUrl": "https://lohitkumard.github.io/Cash-info/icons/icon-512.png",
+  "monochromeIconUrl": "https://lohitkumard.github.io/Cash-info/icons/icon-512.png",
+  "appVersion": "1",
+  "appVersionName": "1.0.0",
+  "signingKey": {
+    "path": "./cashcalc.keystore",
+    "alias": "cashcalc"
+  },
+  "additionalTrustedOrigins": [],
+  "enableNotifications": false,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://lohitkumard.github.io/Cash-info/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {"enabled": false},
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://lohitkumard.github.io/Cash-info/",
+  "minSdkVersion": 21,
+  "fingerprints": [
+    {
+      "name": "release",
+      "value": "40:06:76:F8:D2:85:38:AD:4C:05:91:5E:82:AA:F8:65:1A:E3:02:6A:E7:0B:E5:A1:A1:A3:F3:BB:15:A5:37:A1"
+    }
+  ],
+  "isMonochrome": false
+}
