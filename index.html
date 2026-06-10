@@ -1345,12 +1345,21 @@ function setupPWA(){
   window.addEventListener('beforeinstallprompt',e=>{
     e.preventDefault();
     deferredInstall=e;
+    if(!localStorage.getItem('installPromptShown')){
+      setTimeout(()=>{ localStorage.setItem('installPromptShown','1'); triggerInstall(); },2500);
+    }
   });
   window.addEventListener('appinstalled',()=>{
     deferredInstall=null;
     document.getElementById('installIconBtn').classList.add('installed');
     toast('🎉 CashCalc installed!');
   });
+  // Auto-show on iOS/non-Chrome on first visit
+  const alreadyShown=localStorage.getItem('installPromptShown');
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(!alreadyShown&&!isStandalone){
+    setTimeout(()=>{ localStorage.setItem('installPromptShown','1'); triggerInstall(); },2500);
+  }
 }
 
 function triggerInstall(){
