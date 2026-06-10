@@ -47,14 +47,10 @@ jobs:
 
       - name: Build APK
         run: |
-          # "Y" answers the "no checksum file found, regenerate?" interactive prompt
-          echo "Y" | bubblewrap build \
+          # Pipe both passwords (keystore then key alias) since bubblewrap prompts interactively
+          printf 'cashcalc2026\ncashcalc2026\n' | bubblewrap build \
             --skipPwaValidation \
-            --manifest ./twa-manifest.json \
-            --signingKeyPath ./cashcalc.keystore \
-            --signingKeyAlias cashcalc \
-            --signingKeyStorePassword cashcalc2026 \
-            --signingKeyPassword cashcalc2026 2>&1
+            --manifest ./twa-manifest.json 2>&1
           find . -name "*.apk" 2>/dev/null
 
       - name: Upload APK artifact
