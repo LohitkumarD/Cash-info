@@ -1,0 +1,67 @@
+name: Build CashCalc APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['index.html', 'manifest.json', 'twa-manifest.json']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: |
+          sdkmanager --install "build-tools;34.0.0" "platforms;android-34" 2>&1 | tail -5
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli@latest
+
+      - name: Restore keystore
+        run: |
+          echo "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" | base64 -d > cashcalc.keystore
+
+      - name: Configure Bubblewrap
+        run: |
+          bubblewrap updateConfig --skipPwaValidation 2>/dev/null || true
+          cat > $HOME/.bubblewrap/config.json << 'EOF'
+          {
+            "jdkPath": "/usr/lib/jvm/temurin-17-amd64",
+            "androidSdkPath": "$ANDROID_SDK_ROOT"
+          }
+          EOF
+
+      - name: Build APK
+        run: |
+          bubblewrap build \
+            --skipPwaValidation \
+            --manifest ./twa-manifest.json \
+            --signingKeyPath ./cashcalc.keystore \
+            --signingKeyAlias cashcalc \
+            --signingKeyStorePassword cashcalc2026 \
+            --signingKeyPassword cashcalc2026 2>&1 || true
+          # fallback: find any generated APK
+          find . -name "*.apk" 2>/dev/null
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CashCalc-Android
+          path: |
+            **/*.apk
+          retention-days: 30
+          if-no-files-found: warn
