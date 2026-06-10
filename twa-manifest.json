@@ -39,5 +39,6 @@
       "value": "40:06:76:F8:D2:85:38:AD:4C:05:91:5E:82:AA:F8:65:1A:E3:02:6A:E7:0B:E5:A1:A1:A3:F3:BB:15:A5:37:A1"
     }
   ],
-  "isMonochrome": false
+  "isMonochrome": false,
+  "splashScreenFadeOutDuration": 300
 }

@@ -48,10 +48,35 @@ jobs:
       - name: Install expect
         run: sudo apt-get install -y expect
 
+      - name: Serve icons locally for bubblewrap
+        run: |
+          python3 -m http.server 8080 &
+          sleep 2
+          # Verify icons are accessible
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/icons/icon-512.png)
+          echo "icon-512.png HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] || { echo "ERROR: icon not accessible"; exit 1; }
+
       - name: Generate Android project
         run: |
-          # Creates gradlew, app/, gradle/ from twa-manifest.json
+          # bubblewrap downloads iconUrl to generate Android icon resources.
+          # Redirect to localhost so it gets the real PNG (not a network error page).
+          python3 << 'PYEOF'
+          import json
+          with open('twa-manifest.json') as f:
+              m = json.load(f)
+          for k in ['iconUrl', 'maskableIconUrl', 'monochromeIconUrl']:
+              if k in m:
+                  m[k] = m[k].replace(
+                      'https://lohitkumard.github.io/Cash-info',
+                      'http://localhost:8080'
+                  )
+          with open('twa-manifest.json', 'w') as f:
+              json.dump(m, f, indent=2)
+          print("Icon URLs redirected to localhost")
+          PYEOF
           printf 'Y\n' | bubblewrap update 2>&1
+          git checkout twa-manifest.json
 
       - name: Build APK
         run: |
