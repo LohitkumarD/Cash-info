@@ -37,10 +37,10 @@ jobs:
 
       - name: Configure Bubblewrap
         run: |
-          bubblewrap updateConfig --skipPwaValidation 2>/dev/null || true
-          cat > $HOME/.bubblewrap/config.json << 'EOF'
+          mkdir -p $HOME/.bubblewrap
+          cat > $HOME/.bubblewrap/config.json << EOF
           {
-            "jdkPath": "/usr/lib/jvm/temurin-17-amd64",
+            "jdkPath": "$JAVA_HOME",
             "androidSdkPath": "$ANDROID_SDK_ROOT"
           }
           EOF
@@ -53,8 +53,7 @@ jobs:
             --signingKeyPath ./cashcalc.keystore \
             --signingKeyAlias cashcalc \
             --signingKeyStorePassword cashcalc2026 \
-            --signingKeyPassword cashcalc2026 2>&1 || true
-          # fallback: find any generated APK
+            --signingKeyPassword cashcalc2026 2>&1
           find . -name "*.apk" 2>/dev/null
 
       - name: Upload APK artifact
@@ -64,4 +63,4 @@ jobs:
           path: |
             **/*.apk
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
