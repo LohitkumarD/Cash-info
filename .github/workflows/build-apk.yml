@@ -47,8 +47,8 @@ jobs:
 
       - name: Build APK
         run: |
-          # Pipe both passwords (keystore then key alias) since bubblewrap prompts interactively
-          printf 'cashcalc2026\ncashcalc2026\n' | bubblewrap build \
+          # bubblewrap prompts: keystore pw, keystore pw confirm, key pw, key pw confirm
+          printf 'cashcalc2026\ncashcalc2026\ncashcalc2026\ncashcalc2026\n' | bubblewrap build \
             --skipPwaValidation \
             --manifest ./twa-manifest.json 2>&1
           find . -name "*.apk" 2>/dev/null
