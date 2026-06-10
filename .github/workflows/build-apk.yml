@@ -47,7 +47,8 @@ jobs:
 
       - name: Build APK
         run: |
-          bubblewrap build \
+          # "Y" answers the "no checksum file found, regenerate?" interactive prompt
+          echo "Y" | bubblewrap build \
             --skipPwaValidation \
             --manifest ./twa-manifest.json \
             --signingKeyPath ./cashcalc.keystore \
