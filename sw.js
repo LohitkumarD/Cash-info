@@ -1,6 +1,13 @@
-const CACHE = 'cashcalc-v9';
+const CACHE = 'cashcalc-v10';
 const BASE = '/Cash-info';
-const ASSETS = [BASE+'/', BASE+'/index.html', BASE+'/manifest.json'];
+const ASSETS = [
+  BASE+'/',
+  BASE+'/index.html',
+  BASE+'/manifest.json',
+  BASE+'/sw.js',
+  BASE+'/icons/icon-192.png',
+  BASE+'/icons/icon-512.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -16,6 +23,11 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE+'/index.html')))
+    caches.match(e.request).then(r => {
+      if (r) return r;
+      return fetch(e.request).catch(() => {
+        if (e.request.mode === 'navigate') return caches.match(BASE+'/index.html');
+      });
+    })
   );
 });
