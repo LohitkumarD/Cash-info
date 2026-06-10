@@ -48,6 +48,11 @@ jobs:
       - name: Install expect
         run: sudo apt-get install -y expect
 
+      - name: Generate Android project
+        run: |
+          # Creates gradlew, app/, gradle/ from twa-manifest.json
+          printf 'Y\n' | bubblewrap update 2>&1
+
       - name: Build APK
         run: |
           expect << 'EXPECT_EOF'
