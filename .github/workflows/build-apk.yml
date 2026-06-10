@@ -26,38 +26,10 @@ jobs:
 
       - name: Install Android build tools
         run: |
-          sdkmanager --install "build-tools;34.0.0" "platforms;android-34" "cmdline-tools;7.0" 2>&1 | tail -5
-          # Pin to cmdline-tools 7.0 which bubblewrap 1.12.0 can parse correctly
-          rm -rf "$ANDROID_SDK_ROOT/cmdline-tools/latest"
-          ln -sfn "$ANDROID_SDK_ROOT/cmdline-tools/7.0" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          sdkmanager --install "build-tools;34.0.0" "platforms;android-34" 2>&1 | tail -5
 
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli@1.12.0
-
-      - name: Patch Bubblewrap for unknown SDK filter types
-        run: |
-          cat > /tmp/patch-bubblewrap.js << 'SCRIPT_EOF'
-          const {execSync} = require('child_process');
-          const fs = require('fs');
-          const root = execSync('npm root -g').toString().trim();
-          let files;
-          try {
-            files = execSync('grep -rl "Unrecognised filter type" ' + root + '/@bubblewrap/').toString().trim().split('\n').filter(Boolean);
-          } catch(e) {
-            console.log('Pattern not found, no patch needed');
-            process.exit(0);
-          }
-          for (const file of files) {
-            let c = fs.readFileSync(file, 'utf8');
-            const before = c;
-            c = c.replace(/throw new Error\(`Unrecognised filter type[^`]*`\)/g, 'return filter');
-            c = c.replace(/throw new Error\("Unrecognised filter type[^"]*"\s*\+\s*\w+\)/g, 'return filter');
-            c = c.replace(/throw new Error\('Unrecognised filter type[^']*'\s*\+\s*\w+\)/g, 'return filter');
-            if (c !== before) { fs.writeFileSync(file, c); console.log('Patched:', file); }
-            else { console.log('No change in:', file); }
-          }
-          SCRIPT_EOF
-          node /tmp/patch-bubblewrap.js
 
       - name: Restore keystore
         run: |
@@ -76,10 +48,35 @@ jobs:
       - name: Install expect
         run: sudo apt-get install -y expect
 
+      - name: Serve icons locally for bubblewrap
+        run: |
+          python3 -m http.server 8080 &
+          sleep 2
+          # Verify icons are accessible
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/icons/icon-512.png)
+          echo "icon-512.png HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] || { echo "ERROR: icon not accessible"; exit 1; }
+
       - name: Generate Android project
         run: |
-          # Creates gradlew, app/, gradle/ from twa-manifest.json
+          # bubblewrap downloads iconUrl to generate Android icon resources.
+          # Redirect to localhost so it gets the real PNG (not a network error page).
+          python3 << 'PYEOF'
+          import json
+          with open('twa-manifest.json') as f:
+              m = json.load(f)
+          for k in ['iconUrl', 'maskableIconUrl', 'monochromeIconUrl']:
+              if k in m:
+                  m[k] = m[k].replace(
+                      'https://lohitkumard.github.io/Cash-info',
+                      'http://localhost:8080'
+                  )
+          with open('twa-manifest.json', 'w') as f:
+              json.dump(m, f, indent=2)
+          print("Icon URLs redirected to localhost")
+          PYEOF
           printf 'Y\n' | bubblewrap update 2>&1
+          git checkout twa-manifest.json
 
       - name: Build APK
         run: |
