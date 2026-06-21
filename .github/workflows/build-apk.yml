@@ -79,13 +79,15 @@ jobs:
           git checkout twa-manifest.json
 
       - name: Build APK
+        env:
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           expect << 'EXPECT_EOF'
           set timeout 600
           log_user 1
           spawn bubblewrap build --skipPwaValidation --manifest ./twa-manifest.json
           expect {
-            "Password for" { send "cashcalc2026\r"; exp_continue }
+            "Password for" { send "$env(KEYSTORE_PASS)\r"; exp_continue }
             eof
           }
           catch wait result
