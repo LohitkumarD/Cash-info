@@ -993,7 +993,7 @@ function makeRow(denom,isCoin){
     <div class="d-x">×</div>
     <div class="d-ctrl">
       <button class="d-btn m" onclick="step('${key}',-1)">−</button>
-      <input class="d-inp" type="number" id="inp-${key}" placeholder="0" min="0"
+      <input class="d-inp" type="number" id="inp-${key}" placeholder="0" min="0" inputmode="numeric"
              oninput="calcTotal()" onkeydown="onKey(event,'${key}')"/>
       <button class="d-btn p" onclick="step('${key}',1)">+</button>
     </div>
@@ -1106,11 +1106,13 @@ function step(key,delta){
   const inp=document.getElementById('inp-'+key);
   if(!inp)return;
   inp.value=Math.max(0,(parseInt(inp.value)||0)+delta);
+  haptic();
   calcTotal();
 }
 function stepExtra(delta){
   const inp=document.getElementById('extraCoins');
   inp.value=Math.max(0,(parseInt(inp.value)||0)+delta);
+  haptic();
   calcTotal();
 }
 
