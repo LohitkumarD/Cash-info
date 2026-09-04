@@ -618,6 +618,24 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--t);di
   backdrop-filter:blur(20px);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Parent toast is pointer-events:none, so re-enable hits on the action itself */
+.t-undo{
+  display:inline-block;margin-left:10px;padding:4px 12px;
+  border-radius:14px;background:rgba(168,85,247,.22);
+  border:1px solid rgba(168,85,247,.5);
+  color:#c98bff;font-size:12px;font-weight:800;letter-spacing:.4px;
+  pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.t-undo:active{transform:scale(.94);background:rgba(168,85,247,.34)}
+
+/* ── App footer / legal ── */
+.app-foot{
+  text-align:center;padding:26px 12px 12px;
+  font-size:12px;color:var(--t4);line-height:1.9;
+}
+.app-foot a{color:var(--p);text-decoration:none;font-weight:600}
+.app-foot a:active{opacity:.6}
+.app-foot .dot{opacity:.4;margin:0 7px}
 
 /* ══════════════════════════════════════════
    INSTALL BUTTON + MODAL
@@ -915,6 +933,13 @@ input[type=number]{-moz-appearance:textfield}
         <div class="es-sub">Save a calculation to see it here</div>
       </div>
     </div>
+    <div class="app-foot">
+      CashCalc v1.0.0 · Records stay on your device
+      <br>
+      <a href="privacy.html">Privacy Policy</a>
+      <span class="dot">·</span>
+      <a href="mailto:lohitkumardm@gmail.com">Contact</a>
+    </div>
   </div><!-- /history -->
 
 </div><!-- /pages -->
@@ -1171,22 +1196,61 @@ function snapshot(){
 // ═══════════════════════
 // ACTIONS
 // ═══════════════════════
+let _undoSnap=null,_undoTimer=null;
+
 function resetAll(){
+  const s=snapshot();
+  const payee=document.getElementById('payeeName').value;
+  const teller=document.getElementById('tellerBal').value;
+  // Only offer undo if there was actually something to lose.
+  _undoSnap=(s.total||payee||teller)?{data:s,payee,teller}:null;
+
   NOTES.forEach(n=>{const i=document.getElementById('inp-n'+n);if(i)i.value='';});
   COINS.forEach(n=>{const i=document.getElementById('inp-c'+n);if(i)i.value='';});
   document.getElementById('extraCoins').value='';
   document.getElementById('payeeName').value='';
   document.getElementById('tellerBal').value='';
-  calcTotal();
-  toast('✅ Reset complete');
+  calcTotal();haptic(40);
+
+  if(_undoSnap){
+    toast('✅ Reset <span class="t-undo" onclick="undoReset()">UNDO</span>',5000);
+    clearTimeout(_undoTimer);
+    _undoTimer=setTimeout(()=>{_undoSnap=null;},5000);
+  }else{
+    toast('✅ Reset complete');
+  }
 }
+
+function undoReset(){
+  if(!_undoSnap)return;
+  document.getElementById('payeeName').value=_undoSnap.payee||'';
+  document.getElementById('tellerBal').value=_undoSnap.teller||'';
+  _undoSnap.data.notes.forEach(({d,cnt})=>{const el=document.getElementById('inp-n'+d);if(el)el.value=cnt;});
+  _undoSnap.data.coins.forEach(({d,cnt})=>{const el=document.getElementById('inp-c'+d);if(el)el.value=cnt;});
+  if(_undoSnap.data.extra)document.getElementById('extraCoins').value=_undoSnap.data.extra;
+  _undoSnap=null;clearTimeout(_undoTimer);
+  calcTotal();haptic(40);
+  toast('↩️ Restored');
+}
+
 function copyText(){
-  navigator.clipboard.writeText(buildText(null)).then(()=>toast('📋 Copied!'));
+  const text=buildText(null);
+  haptic();
+  navigator.clipboard.writeText(text)
+    .then(()=>toast('📋 Copied!'))
+    .catch(()=>toast('⚠️ Copy failed'));
 }
 function shareText(){
   const text=buildText(null);
-  if(navigator.share)navigator.share({title:'Cash Denomination',text});
-  else navigator.clipboard.writeText(text).then(()=>toast('📋 Copied (share unsupported)'));
+  haptic();
+  if(navigator.share){
+    // A user cancelling the share sheet rejects the promise — don't treat that as an error.
+    navigator.share({title:'Cash Denomination',text}).catch(()=>{});
+  }else{
+    navigator.clipboard.writeText(text)
+      .then(()=>toast('📋 Copied (share unsupported)'))
+      .catch(()=>toast('⚠️ Copy failed'));
+  }
 }
 
 // ═══════════════════════
@@ -1197,9 +1261,16 @@ function saveCurrent(){
   if(!data.total){toast('⚠️ Enter at least one denomination');return;}
   const rec={id:Date.now(),ts:Date.now(),payee:document.getElementById('payeeName').value||'Unknown',teller:gv('tellerBal'),data};
   const h=getH();h.unshift(rec);
-  localStorage.setItem('cc_h',JSON.stringify(h.slice(0,50)));
-  renderHistory();
-  toast('💾 Saved!');
+  const dropped=h.length>50;
+  try{
+    localStorage.setItem('cc_h',JSON.stringify(h.slice(0,50)));
+  }catch(err){
+    // Storage quota exceeded or blocked (private mode) — don't crash the save.
+    toast('⚠️ Storage full. Delete old records to save.',3500);
+    return;
+  }
+  renderHistory();haptic(40);
+  toast(dropped?'💾 Saved — oldest record removed (50 max)':'💾 Saved!');
 }
 function getH(){try{return JSON.parse(localStorage.getItem('cc_h')||'[]');}catch{return[];}}
 
@@ -1298,13 +1369,32 @@ function toggleCard(id){
   const el=document.getElementById('hcard-'+id);
   if(el)el.classList.toggle('open');
 }
+let _histUndo=null,_histTimer=null;
+
 function delRec(id){
-  localStorage.setItem('cc_h',JSON.stringify(getH().filter(r=>r.id!==id)));
-  renderHistory();toast('🗑 Deleted');
+  const h=getH();
+  _histUndo=h;
+  localStorage.setItem('cc_h',JSON.stringify(h.filter(r=>r.id!==id)));
+  renderHistory();haptic(40);
+  toast('🗑 Deleted <span class="t-undo" onclick="undoHist()">UNDO</span>',5000);
+  clearTimeout(_histTimer);
+  _histTimer=setTimeout(()=>{_histUndo=null;},5000);
 }
 function clearHistory(){
-  if(!getH().length)return;
-  localStorage.removeItem('cc_h');renderHistory();toast('🗑 Cleared');
+  const h=getH();
+  if(!h.length)return;
+  _histUndo=h;
+  localStorage.removeItem('cc_h');renderHistory();haptic(40);
+  toast('🗑 Cleared all <span class="t-undo" onclick="undoHist()">UNDO</span>',6000);
+  clearTimeout(_histTimer);
+  _histTimer=setTimeout(()=>{_histUndo=null;},6000);
+}
+function undoHist(){
+  if(!_histUndo)return;
+  try{localStorage.setItem('cc_h',JSON.stringify(_histUndo));}catch{}
+  _histUndo=null;clearTimeout(_histTimer);
+  renderHistory();haptic(40);
+  toast('↩️ Restored');
 }
 function cpyRec(i){const r=getH()[i];if(!r)return;navigator.clipboard.writeText(buildText(r)).then(()=>toast('📋 Copied'));}
 function shrRec(i){
@@ -1338,10 +1428,13 @@ function switchTab(name){
 // ═══════════════════════
 // TOAST
 // ═══════════════════════
+let _toastTimer=null;
 function toast(msg,dur=2400){
   const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),dur);
+  // Messages are app-authored only — no user input is interpolated here.
+  el.innerHTML=msg;el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
 }
 
 // ═══════════════════════
@@ -1411,14 +1504,26 @@ if('serviceWorker' in navigator){
     .then(reg=>{
       reg.addEventListener('updatefound',()=>{
         const nw=reg.installing;
+        if(!nw)return;
         nw.addEventListener('statechange',()=>{
-          if(nw.state==='activated')window.location.reload();
+          // Offer the reload instead of forcing it — an automatic reload
+          // would wipe a count the user is in the middle of entering.
+          if(nw.state==='installed'&&navigator.serviceWorker.controller){
+            toast('🔄 Update ready <span class="t-undo" onclick="location.reload()">RELOAD</span>',8000);
+          }
         });
       });
-    });
+    }).catch(()=>{});
 }
 
 init();
+
+// Deep links from PWA shortcuts: ?tab=calc|details|history
+// Runs after init() so rows and history are already built.
+(function(){
+  const t=new URLSearchParams(location.search).get('tab');
+  if(t&&['calc','details','history'].includes(t))switchTab(t);
+})();
 </script>
 </body>
 </html>

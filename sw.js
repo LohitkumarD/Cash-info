@@ -1,8 +1,9 @@
-const CACHE = 'cashcalc-v10';
+const CACHE = 'cashcalc-v11';
 const BASE = '/Cash-info';
 const ASSETS = [
   BASE+'/',
   BASE+'/index.html',
+  BASE+'/privacy.html',
   BASE+'/manifest.json',
   BASE+'/sw.js',
   BASE+'/icons/icon-192.png',
@@ -10,7 +11,10 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  // Don't let one failed asset abort the whole install.
+  e.waitUntil(caches.open(CACHE).then(c =>
+    Promise.allSettled(ASSETS.map(a => c.add(a)))
+  ));
   self.skipWaiting();
 });
 
@@ -22,6 +26,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.match(e.request).then(r => {
       if (r) return r;
